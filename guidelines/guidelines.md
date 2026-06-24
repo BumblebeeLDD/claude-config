@@ -73,3 +73,8 @@ When acquiring data from paid, logged-in subscription data platforms (e.g. 飞�
 3. **New projects** follow these guidelines by default — nothing to wire up.
 4. A specific project may still **add to or override** any guidelines for itself via its own project-level `CLAUDE.md` / `memory/`; project-local guidance wins where it conflicts.
 5. To **update the guidelines:** edit this file directly, bump *Last updated*, and add a Changelog entry. Every project picks up the change automatically on its next session — nothing else to sync.
+
+---
+
+## Changelog
+- **2026-06-24** — Fixed the documented import line in *How this file is used* to use the portable `@~/.claude/guidelines/guidelines.md` form (was a stale absolute Windows path). Added this Changelog section.
