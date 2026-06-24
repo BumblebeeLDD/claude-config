@@ -8,7 +8,7 @@
 > **Scope.** Universal guidelines only. Project-specific facts (accounts, file paths, schemas, status)
 > stay in that project's own `memory/`. If something is only true for one project, it does not belong here.
 >
-> **Last updated:** 2026-06-23 — *bump this date and add a line to the Changelog whenever you edit.*
+> **Last updated:** 2026-06-24 — *bump this date and add a line to the Changelog whenever you edit.*
 
 ---
 
@@ -69,7 +69,7 @@ When acquiring data from paid, logged-in subscription data platforms (e.g. 飞�
 
 ## How this file is used (the linking mechanism)
 1. This is the **canonical copy**, and it is **global**: it applies to **every** Claude Code project on this machine automatically — no per-project opt-in needed.
-2. It loads globally because **`~/.claude/CLAUDE.md`** imports it with a single line (`@C:/Users/steve/.claude/guidelines/guidelines.md`). Projects **reference** this file rather than copying it, so there is only ever one source of truth.
+2. It loads globally because **`~/.claude/CLAUDE.md`** imports it with a single line (`@~/.claude/guidelines/guidelines.md`). Projects **reference** this file rather than copying it, so there is only ever one source of truth.
 3. **New projects** follow these guidelines by default — nothing to wire up.
 4. A specific project may still **add to or override** any guidelines for itself via its own project-level `CLAUDE.md` / `memory/`; project-local guidance wins where it conflicts.
 5. To **update the guidelines:** edit this file directly, bump *Last updated*, and add a Changelog entry. Every project picks up the change automatically on its next session — nothing else to sync.
