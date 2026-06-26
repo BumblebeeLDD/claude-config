@@ -8,7 +8,7 @@
 > **Scope.** Universal guidelines only. Project-specific facts (accounts, file paths, schemas, status)
 > stay in that project's own `memory/`. If something is only true for one project, it does not belong here.
 >
-> **Last updated:** 2026-06-24 — *bump this date and add a line to the Changelog whenever you edit.*
+> **Last updated:** 2026-06-27 — *bump this date and add a line to the Changelog whenever you edit.*
 
 ---
 
@@ -45,13 +45,15 @@
 When acquiring data from paid, logged-in subscription data platforms (e.g. 飞瓜, 蝉妈妈):
 1. **Subscription data platforms → browser-only, never API.** **Do NOT use subscription data platform APIs** — they impose call limits and can trigger anti-scraping. **Pull data only by driving the browser directly** (logged-in session), exactly like a human analyst. *Remember this rule.*
 2. **Move at human pace** — deliberate, varied pauses between actions; small natural scrolls; let content load. Never fire actions back-to-back at machine speed.
-3. **Anti-detection is a first-class, ongoing engineering discipline.** Drive the browser with **Playwright + the latest stealth techniques and human-behaviour emulation**, covering:
+3. **Anti-detection is a first-class, ongoing engineering discipline.** Drive a **real browser with human-behaviour emulation**, covering:
    - **Behaviour** — realistic mouse paths and scrolling, randomized timing, natural session lengths.
    - **Identity** — session / account rotation, residential China IPs.
    - **Rate & resilience** — conservative rate limits, CAPTCHA handling, anomaly back-off.
 
+   **➡️ Before automating ANY anti-bot site, read the dedicated playbook: [`anti-bot-playbook.md`](anti-bot-playbook.md)** (sibling of this file in `claude-config/guidelines/`). It is the canonical, continuously-updated guide: pre-flight checklist, detection vectors, tool choice (e.g. **DrissionPage**, or a `rebrowser`-patched Playwright, for sophisticated anti-bot — *not* vanilla Playwright + stealth, which leaks a CDP `Runtime.enable` fingerprint and a tell-tale `chrome-extension://invalid/` artifact), the concrete mistakes to avoid, and reusable diagnostic recipes. **Keep that file updated** as you learn — this is REQUIRED.
+
    **Continually check, learn, and apply the newest anti-detection knowledge, tools, and methods** — this is never one-time.
-4. **Watch for any anti-bot signal** (captcha, verification, sudden logout, rate-limit/error, blank/blocked content, odd redirect). If one appears, **stop immediately and tell the user** — do not retry.
+4. **Watch for any anti-bot signal** (captcha, verification, sudden logout, rate-limit/error, blank/blocked content, odd redirect). If one appears, **stop immediately and tell the user** — do not retry. **But first rule out your own render-timing bug** — judging page/login state before the SPA finishes loading (e.g. while it still shows `加载中`) is the most common false alarm (playbook §4).
 5. **Confirm before bulk export** (quota + looks automated). Prefer reading already-rendered content over re-querying.
 6. **Quality & freshness monitoring:** alerts when a feed breaks or values drift.
 
@@ -77,4 +79,5 @@ When acquiring data from paid, logged-in subscription data platforms (e.g. 飞�
 ---
 
 ## Changelog
+- **2026-06-27** — §6.3: replaced "Playwright + stealth" with "real browser + human emulation" and added a prominent pointer to the new canonical [`anti-bot-playbook.md`](anti-bot-playbook.md) (detection vectors, tool choice, mistakes, diagnostic recipes). §6.4: added "rule out your own render-timing bug before crying anti-bot". Born from the BOSS直聘 investigation.
 - **2026-06-24** — Fixed the documented import line in *How this file is used* to use the portable `@~/.claude/guidelines/guidelines.md` form (was a stale absolute Windows path). Added this Changelog section.
