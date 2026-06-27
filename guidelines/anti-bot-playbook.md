@@ -45,8 +45,16 @@ Tick every box before you launch automation against a protected site:
    one stable logged‑in profile, residential/local IP, **confirm before bulk**,
    **never commit secrets** (profile dir, `.env`, data).
 7. **Know your stop condition** (§1.4) and have it coded to **halt, not retry**.
+8. **Budget your sessions — detection is CUMULATIVE and server‑side.** Set a hard cap
+   on launches *before* you start (e.g. **≤2–3/hour while calibrating**). Every
+   automated session — and **every time a kill‑switch fires** — is a signal logged
+   against the account. Enough of them → a **temporary account‑level web‑login ban**
+   (§5 Layer 3). A fired kill‑switch is **not** a free retry.
 
 > If you can't tick 1–4, you are not ready to run. Stop and fix the setup first.
+> **And never grind.** If the first runs trip detection, STOP and rethink — do not
+> burn a dozen sessions in an afternoon. That is exactly how a real account gets
+> restricted (it happened to us — §5 Layer 3).
 
 ---
 
@@ -59,9 +67,10 @@ Tick every box before you launch automation against a protected site:
    (a cool‑down) in the one place every run launches through.
 3. **Stop on a CONFIRMED hard signal — do not retry.** Captcha/slider, 验证/安全验证,
    "操作过于频繁/访问过于频繁", forced logout, repeated genuine blank/blocked pages,
-   odd redirects to a logged‑out page. Halt, alert the human, screenshot, and let a
-   person take over **by hand**. Retrying after a real block is the worst thing you
-   can do.
+   odd redirects to a logged‑out page, **or a 安全提示 about 第三方/插件/外挂/辅助工具
+   tools + a temporary web‑login restriction (§5 Layer 3)**. Halt, alert the human,
+   screenshot, and let a person take over **by hand**. Retrying after a real block is
+   the worst thing you can do.
 4. **But verify it's real before you cry wolf (§4).** Most "logouts" and "blank
    pages" in early development are **your own timing/render bugs**, not the site.
    Distinguish before alarming or stopping.
@@ -71,6 +80,11 @@ Tick every box before you launch automation against a protected site:
    collected data, and real config are gitignored, always.
 7. **Anti‑detection is ongoing engineering, not one‑time.** Sites evolve; keep
    learning and updating this file.
+8. **Detection is cumulative — budget your sessions.** The biggest risk isn't one
+   clever fingerprint; it's **volume**. Repeated automated sessions and repeatedly
+   tripped kill‑switches accumulate into a server‑side account flag → a temporary
+   web‑login ban. Cap launches per hour, stop at the FIRST real signal, and never
+   re‑trigger a kill‑switch "to see if it still happens". (§5 Layer 3, M10)
 
 ---
 
@@ -89,17 +103,24 @@ Two failure shapes you will see:
 Both are **delayed, detection‑triggered defenses** — the delay means an async
 fingerprint check completed and the site reacted. The delay itself is a clue.
 
-A third, totally different shape is **your own bug**:
+A third shape is **your own bug**:
 
 - **Loading‑state false negative:** you check "am I logged in / is content here?"
   while the SPA still shows a loading placeholder (e.g. `加载中，请稍候`), get a false
   "no", and do something dumb (wait for a QR that isn't needed, capture a blank).
 
+A fourth shape is the **nuclear option — account‑level block**:
+
+- **Temporary web‑login ban:** after *enough* detection over time, the **account**
+  (not just the page) is restricted from web login for hours, with an explicit
+  notice. This is **server‑side and cumulative** (§5 Layer 3). The fix is not
+  technical — it's **stop and wait**.
+
 ---
 
 ## 3. Mistakes we actually made — and the rule each one taught
 
-> These are real. Each cost time. Don't repeat them.
+> These are real. Each cost time (or an account). Don't repeat them.
 
 | # | Mistake | What actually happened | Rule learned |
 |---|---------|------------------------|--------------|
@@ -112,6 +133,7 @@ A third, totally different shape is **your own bug**:
 | M7 | **Trusted a stealth plugin** | `puppeteer-extra-plugin-stealth` emitted a tell‑tale `chrome-extension://invalid/` request; with real Chrome it was also unnecessary | Stealth plugins can **add** fingerprints. Prefer a real browser + structural fixes over piling on evasions. |
 | M8 | **Tried to hand‑patch a minified bundle** | `Runtime.enable` lived in `coreBundle.js` (minified) — not safely patchable | Use the **maintained patch/package** (e.g. `rebrowser`) or a tool without the leak; don't hack vendor bundles. |
 | M9 | **Treated symptoms as the cause** | Aborted XHRs (`getBossFriendListV2`) looked like the problem; they were just in‑flight requests **aborted by** the page navigating away | Find the **first** cause. Trap the navigation primitive; ignore downstream abort noise. |
+| M10 | **Ground the account into a ban** ⚠️ | Ran 10+ automated web sessions across tools in one afternoon and let the kill‑switch fire again and again; 直聘 escalated to a **temporary web‑login restriction on the real account** (安全提示: 第三方/插件/外挂/辅助工具) | **Detection is cumulative + server‑side.** STOP at the first kill‑switch; cap sessions/hour (§0.8); never re‑trigger a defense to "test" it. One careful run beats ten noisy ones. |
 
 ---
 
@@ -149,13 +171,14 @@ learn the exact mechanism (e.g. `window.open('','_self')` from `564.js`).
 - Recovers within a couple seconds of waiting → **your render‑timing bug** (M1/M2).
 - Only an automated context blanks/bounces; a human's browser is fine →
   **detection‑triggered defense** (real anti‑bot).
-- Captcha/验证/频繁 text visible → **hard block**; stop per §1.3.
+- Captcha/验证/频繁 text, or a **第三方工具 web‑login restriction notice**, visible →
+  **hard block**; stop per §1.3. (The account‑level ban is not debuggable — wait it out.)
 
 ---
 
 ## 5. Case study — BOSS直聘 (zhipin.com), recruiter side (2026‑06)
 
-Concrete, because patterns generalize.
+Concrete, because patterns generalize. 直聘 has **at least three** layers.
 
 **Layer 0 — our own bugs (not the site):** the early "logged out / blank page"
 scares were M1–M3 above. The session was fine the whole time.
@@ -176,12 +199,28 @@ to the logged‑out homepage**. Confirmed to be 直聘's anti‑bot.
   **refuses the page's attempt to talk to the CDP port**, so the scan finds nothing.
   Playwright opens that door when it uses a TCP port; DrissionPage never does.
 
+**Layer 3 — account‑level temporary web‑login ban (server‑side, cumulative).** ⚠️
+After a day of *many* automated web sessions (Playwright + rebrowser + DrissionPage)
+and repeated kill‑switch trips, 直聘 showed a **安全提示** and **temporarily restricted
+the account from web login** (a few hours), instructing us to close auxiliary tools
+and use the APP/PC client meanwhile. Verbatim gist:
+> *"系统检测到您的账号存在使用第三方招聘管理系统、插件、外挂、软件等辅助工具… 我们将
+> 暂时限制您通过 web 端登录账号… 预计开启时间 …"*
+- **This is not a tooling bug — it's volume.** Even DrissionPage, which beats Layers
+  1–2, does **not** make the account immune to *cumulative server‑side scoring*. The
+  trip wire was the sheer number of detected sessions in one afternoon.
+- **Response:** STOP. Do not attempt web login (manual *or* automated) until the
+  stated lift time. Use the **APP/PC client** meanwhile. When resuming, drastically
+  cut session volume (§0.8) and stop at the first signal.
+
 **Conclusion for hard, multi‑layer anti‑bot:** prefer **DrissionPage** (real Chrome,
-no `Runtime.enable` leak, no `--remote-allow-origins`). It is what the proven working
-script used. Playwright can be pushed (rebrowser) but it's an arms race per layer.
+no `Runtime.enable` leak, no `--remote-allow-origins`) for the *client‑side* layers —
+but **DrissionPage is not a license to grind.** Layer 3 is defeated only by restraint.
+Playwright can be pushed (rebrowser) but it's an arms race per layer.
 
 **Observed 直聘 signals to treat as hard stops:** 安全验证 / 请完成验证 / 滑动验证 /
-拖动滑块 / 人机验证 / 操作过于频繁 / 访问过于频繁 / 账号异常 / 访问受限 / forced logout.
+拖动滑块 / 人机验证 / 操作过于频繁 / 访问过于频繁 / 账号异常 / 访问受限 / forced logout /
+**安全提示 about 第三方招聘管理系统、插件、外挂、软件 + temporary web‑login restriction**.
 
 ---
 
@@ -196,6 +235,7 @@ script used. Playwright can be pushed (rebrowser) but it's an arms race per laye
 | **Stealth‑plugin artifacts** | e.g. a `chrome-extension://invalid/` request; inconsistent spoofed `navigator.plugins`. | With real Chrome, **don't** use `puppeteer-extra-plugin-stealth`; real Chrome already has genuine values. |
 | **Behavioral** | Machine‑speed clicks, no mouse movement, metronomic timing, inhuman session length. | Real mouse paths, randomized varied delays, natural scroll, cool‑down between runs, sane session lengths. |
 | **Network/identity** | Datacenter IP, mismatched timezone/locale/Accept‑Language vs IP region. | Residential/local IP for the target region; matching `locale`/`timezoneId`/`--lang`. |
+| **Cumulative / server‑side account scoring** ⚠️ | Aggregates detected sessions, tripped kill‑switches, login churn over time → a temporary account‑level web‑login ban. **No client‑side trick defeats this.** | **Volume control only:** cap sessions/hour, stop at the first signal, never re‑trigger a defense. When banned, wait out the stated window; use the platform's own APP/PC client. |
 | **SPA loading‑state confusion (self‑inflicted)** | n/a — this is *your* bug | Wait for a definitive content selector before judging (§4.1). |
 
 ---
@@ -204,7 +244,7 @@ script used. Playwright can be pushed (rebrowser) but it's an arms race per laye
 
 - **DrissionPage (Python) — default for hard anti‑bot (China subscription platforms).**
   Drives real Chrome, no `Runtime.enable` leak, no `--remote-allow-origins`. Proven
-  against 直聘. Minimal, AI‑maintainable.
+  against 直聘's *client‑side* layers. Minimal, AI‑maintainable.
   ```python
   from DrissionPage import ChromiumPage, ChromiumOptions
   co = ChromiumOptions()
@@ -213,6 +253,9 @@ script used. Playwright can be pushed (rebrowser) but it's an arms race per laye
   co.set_argument('--lang=zh-CN')
   page = ChromiumPage(co)                  # launches real Chrome, no automation tells
   ```
+  > Caveat: DrissionPage beats client‑side detection (Layers 1–2) but does **NOT**
+  > make the account immune to **cumulative server‑side scoring** (§5 Layer 3). Still
+  > budget sessions and stop at the first signal.
 - **Playwright/Puppeteer — only if you must stay in Node.** Make it look like
   DrissionPage:
   - use **`rebrowser-playwright`** (or `rebrowser-patches`) to kill the
@@ -225,7 +268,8 @@ script used. Playwright can be pushed (rebrowser) but it's an arms race per laye
 - **Selenium — avoid for hard anti‑bot.** Similar CDP tells, more fingerprints.
 
 > Rule of thumb: if a site has a *delayed kill‑switch or localhost port scan*, reach
-> for DrissionPage rather than grinding Playwright through layer after layer.
+> for DrissionPage rather than grinding Playwright through layer after layer. And no
+> matter the tool, **grinding gets the account banned** (§5 Layer 3).
 
 ---
 
@@ -242,6 +286,9 @@ script used. Playwright can be pushed (rebrowser) but it's an arms race per laye
   when a login wall is *visibly* present, never while a loading placeholder shows.
 - **Run cool‑down** — persist a `last-run` timestamp; on launch, if elapsed < floor
   (e.g. 90s), sleep the remainder + jitter. One choke point for every run.
+- **Session budget / abort‑on‑signal** — track launches per rolling hour and refuse to
+  launch beyond the cap; on the first confirmed hard signal, **abort the whole run and
+  surface it** — never loop or retry. (Guards against M10 / §5 Layer 3.)
 
 (Reference implementations from the 直聘 project: a `diag` survival/nav‑trap script
 and a DrissionPage `survival` proof. Port the *shape*, not the literal code.)
@@ -271,6 +318,11 @@ and a DrissionPage `survival` proof. Port the *shape*, not the literal code.)
   something anti‑bot‑related, **update this file before moving on.**
 
 ### Changelog
+- **2026‑06‑27 (later)** — Added the hard lesson from grinding the 直聘 account into a
+  **temporary web‑login ban**: detection is cumulative + server‑side. New §5 Layer 3,
+  mistake **M10**, a §6 "cumulative server‑side scoring" row, §0 item 8 + §1 rule 8
+  (session budget / never grind), a 4th failure shape in §2, and a session‑budget
+  recipe in §8. Key point: even DrissionPage is not immune to volume.
 - **2026‑06‑27** — Created from the BOSS直聘 investigation. Captured M1–M9 mistakes,
   the render‑race vs real‑block distinction, the `Runtime.enable` and
   localhost‑port‑scan vectors, the `--remote-allow-origins=*` insight, DrissionPage
