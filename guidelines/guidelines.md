@@ -8,7 +8,7 @@
 > **Scope.** Universal guidelines only. Project-specific facts (accounts, file paths, schemas, status)
 > stay in that project's own `memory/`. If something is only true for one project, it does not belong here.
 >
-> **Last updated:** 2026-06-27 — *bump this date and add a line to the Changelog whenever you edit.*
+> **Last updated:** 2026-06-29 — *bump this date and add a line to the Changelog whenever you edit.*
 
 ---
 
@@ -59,6 +59,8 @@ When acquiring data from paid, logged-in subscription data platforms (e.g. 飞�
 
 ## 7. Engineering & ops hygiene
 1. **Done means verified:** tests pass and the linter is clean before calling something finished. Verify against **real/live data**, not just fixtures.
+
+   **➡️ Before claiming anything is "correct/certified/done", and for ANY verification, audit, conversion, or "is this right?" task, use the canonical [`error-discovery-playbook.md`](error-discovery-playbook.md)** (sibling of this file). It is the continuously-updated doctrine for *hunting* errors (not just fixing the one in front of you) and guaranteeing accuracy + completeness via system-wide audit: the verification ladder (asserted < value-match < internal-recompute < formula/spec-trace+parity < adversarial multi-witness), the 5-dimension audit framework, what/when/where to check, the error taxonomy, anti-patterns, and the SOP. **Keep that file updated** as new mistakes/learnings/skills emerge — this is REQUIRED. Core rules: *never infer what you can read; a value-match is not a proof; certify only on real, non-blank, multi-row anchors; surface gaps loudly; fix at the source and lock a regression test.*
 2. **Report outcomes faithfully** — if a step failed or was skipped, say so plainly with the evidence.
 3. **Windows environment realities:** force **UTF-8** (the console is cp1252 and crashes on Chinese text); keep the project **venv / `uv`** on PATH for each shell.
 4. **Commit discipline:** small, described commits; branch before working on a shared/main line.
@@ -79,5 +81,6 @@ When acquiring data from paid, logged-in subscription data platforms (e.g. 飞�
 ---
 
 ## Changelog
+- **2026-06-29** — §7.1: added a prominent pointer to the new canonical [`error-discovery-playbook.md`](error-discovery-playbook.md) — cross-project doctrine for error-hunting + system-wide audit (verification ladder, 5-dimension framework, error taxonomy, anti-patterns, SOP, living-doc maintenance protocol). Born from the BumblebeeDB Operating-Model conversion audit (inference bug → blank-anchor cert → system-integrity audit → multi-agent formula-trace → wrong-definition/wrong-population rebuilds).
 - **2026-06-27** — §6.3: replaced "Playwright + stealth" with "real browser + human emulation" and added a prominent pointer to the new canonical [`anti-bot-playbook.md`](anti-bot-playbook.md) (detection vectors, tool choice, mistakes, diagnostic recipes). §6.4: added "rule out your own render-timing bug before crying anti-bot". Born from the BOSS直聘 investigation.
 - **2026-06-24** — Fixed the documented import line in *How this file is used* to use the portable `@~/.claude/guidelines/guidelines.md` form (was a stale absolute Windows path). Added this Changelog section.
